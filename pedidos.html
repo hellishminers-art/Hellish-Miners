@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Ordenes - Bistro Café AMOCH ⚡</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f0f10; --card:#141416; --muted:#bfc6cd; --accent:#ffd36b; --accent-2:#ffb000;
+  --panel:#1a1a1c;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; font-family:Poppins,system-ui,Arial; background:linear-gradient(180deg,#0b0b0d 0%, #0f0f10 100%); color:#fff; -webkit-font-smoothing:antialiased;
+}
+
+/* Pantalla de carga */
+#pantallaCarga{
+  position:fixed; inset:0; background:#000; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  z-index:9999; text-align:center; gap:12px;
+  animation: fadeOut 1s ease 3.0s forwards;
+}
+#pantallaCarga h1{ margin:0; font-size:2rem; color:#fff; opacity:0; animation: fadeIn 1s ease forwards; letter-spacing:1px }
+#pantallaCarga img{ width:140px; margin:12px 0; opacity:0; animation: fadeInScale 1s ease forwards .5s; transform-origin:center; }
+#pantallaCarga p{ margin:0; color:var(--accent); opacity:0; animation: fadeIn 1s ease forwards 1.2s; }
+@keyframes fadeIn{ from{opacity:0; transform:translateY(12px)} to{opacity:1; transform:none} }
+@keyframes fadeOut{ to{opacity:0; visibility:hidden} }
+@keyframes fadeInScale{ 0%{opacity:0; transform:scale(0.6)} 100%{opacity:1; transform:scale(1)} }
+
+.headerWrap{ padding:20px 18px; text-align:center; background:linear-gradient(180deg,var(--card),#0f0f10); border-bottom:1px solid rgba(255,255,255,0.02); position:relative; }
+.brandTitle{ font-weight:600; color:var(--accent); font-size:1.4rem; margin:4px 0; }
+.subtitle{ color:var(--muted); margin:6px 0 0 0; font-size:0.95rem; opacity:0.9; }
+
+.container{ max-width:1100px; margin:18px auto; padding:12px; }
+
+.controls{ display:flex; gap:10px; align-items:center; justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; }
+.controls .left{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.controls input[type="text"]{ padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background:transparent; color:#fff; min-width:220px; }
+.controls select, .controls button{ padding:8px 12px; border-radius:8px; border:none; cursor:pointer; font-weight:600; }
+.btnRefresh{ background:linear-gradient(180deg,var(--accent-2),var(--accent)); color:#111; }
+.filterPaid, .filterTime{ background:transparent; border:1px solid rgba(255,255,255,0.05); color:var(--muted); }
+
+.statusMsg{ color:var(--muted); margin-bottom:12px; font-size:0.95rem; }
+
+.ordersGrid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:12px; }
+
+.orderCard{
+  background:var(--panel); border-radius:12px; padding:12px;
+  border:2px solid rgba(255,255,255,0.05); box-shadow:0 6px 18px rgba(0,0,0,0.45);
+  position:relative; transition:border 0.3s ease;
+  word-wrap:break-word; overflow-wrap:break-word;
+}
+.orderCard.delivered{ border:2px solid #00ff88; }
+
+.checkboxDelivered{
+  position:absolute; top:10px; right:10px; transform:scale(1.2);
+}
+
+.orderHeader{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; }
+.orderId{ color:var(--muted); font-size:0.85rem; word-break:break-all; }
+.orderAmount{ font-weight:800; color:var(--accent); }
+.orderMemo{ color:#e6e9eb; margin:8px 0; font-size:0.95rem; min-height:44px; word-break:break-word; overflow-wrap:break-word; }
+.orderMeta{ display:flex; justify-content:space-between; color:var(--muted); font-size:0.82rem; margin-top:6px; word-break:break-all; }
+
+.badgePaid{ background:#1d6e3a; color:#cfffdd; padding:6px 8px; border-radius:999px; font-weight:700; font-size:0.8rem; }
+.badgePending{ background:#6e5a1d; color:#fff6d6; padding:6px 8px; border-radius:999px; font-weight:700; font-size:0.8rem; }
+
+.note{ margin-top:14px; color:var(--muted); font-size:0.85rem; text-align:center; }
+
+footer{ text-align:center; padding:14px; color:#888; font-size:12px; margin-top:18px; }
+</style>
+</head>
+<body>
+<div id="pantallaCarga">
+  <h1>Bistro Café AMOCH</h1>
+  <img src="https://i.ibb.co/LDx54Scp/IMG-2520.png" alt="Logo Hellish Miners">
+  <p>Desarrollado por Hellish Miners ⚡</p>
+</div>
+
+<header class="headerWrap">
+  <div class="brandTitle">Panel de Órdenes — AMOCH</div>
+  <div class="subtitle">Visualiza órdenes según la descripción (memo) de cada transacción</div>
+</header>
+
+<main class="container">
+  <div class="controls">
+    <div class="left">
+      <input id="searchMemo" type="text" placeholder="Buscar por descripción (memo) ...">
+      <select id="filterPaid" class="filterPaid">
+        <option value="all">Todas</option>
+        <option value="paid">Solo pagadas</option>
+        <option value="unpaid">Solo pagadas</option>
+      </select>
+      <select id="filterTime" class="filterTime">
+        <option value="all">Todo</option>
+        <option value="hour">Última hora</option>
+        <option value="day">Último día</option>
+        <option value="week">Última semana</option>
+        <option value="month">Último mes</option>
+      </select>
+      <button id="btnRefresh" class="btnRefresh">🔄 Refrescar</button>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:0.85rem;color:var(--muted)">Server: <span id="serverUrl"></span></div>
+      <div style="font-size:0.85rem;color:var(--muted)">ReadKey: <span id="readKeyShort"></span></div>
+    </div>
+  </div>
+
+  <div class="statusMsg" id="statusMsg">Cargando transacciones...</div>
+
+  <div class="ordersGrid" id="ordersGrid"></div>
+
+  <div class="note">
+    Si no aparecen transacciones, revisa CORS o que la <strong>readkey</strong> sea correcta y que existan payments en LNBits.
+  </div>
+</main>
+
+<footer>
+  Panel de órdenes — Hellish Miners
+</footer>
+
+<script>
+  //chirilica
+const LNBITS_URL = 'http://chirilicas.com:5000';
+const READ_KEY = 'f85b67c8d22745ceb3bdac7fead3478d';
+
+document.getElementById('serverUrl').textContent = LNBITS_URL;
+document.getElementById('readKeyShort').textContent = READ_KEY.slice(0,6) + '...' + READ_KEY.slice(-6);
+
+function fmtDate(ts){
+  let d = typeof ts === 'number' ? new Date(ts > 1e12 ? ts : ts * 1000) : new Date(ts);
+  if(isNaN(d)) return ts;
+  return d.toLocaleString('es-ES', {dateStyle:'medium', timeStyle:'short'});
+}
+
+function safeAmount(obj){
+  if(obj.amount !== undefined) return Number(obj.amount);
+  if(obj.amount_msat !== undefined) return Math.round(Number(obj.amount_msat)/1000);
+  return 0;
+}
+
+const ordersGrid = document.getElementById('ordersGrid');
+const statusMsg = document.getElementById('statusMsg');
+const searchMemo = document.getElementById('searchMemo');
+const filterPaid = document.getElementById('filterPaid');
+const filterTime = document.getElementById('filterTime');
+const btnRefresh = document.getElementById('btnRefresh');
+let lastPayments = [];
+
+/* Guardar y obtener entregas */
+function loadDelivered(){ return JSON.parse(localStorage.getItem('deliveredOrders') || '{}'); }
+function saveDelivered(map){ localStorage.setItem('deliveredOrders', JSON.stringify(map)); }
+let deliveredMap = loadDelivered();
+
+/*  Render */
+function renderPayments(payments){
+  ordersGrid.innerHTML='';
+  if(!payments || payments.length===0){ statusMsg.textContent='No se encontraron transacciones.'; return; }
+  statusMsg.textContent=`Mostrando ${payments.length} transacciones.`;
+  
+  for(const p of payments){
+    const amount = safeAmount(p);
+    const paid = p.paid === true || p.status === 'paid' || p.paid === 1;
+    const memo = p.memo || p.description || '';
+    const id = p.payment_hash || p.id || Math.random().toString(36).slice(2,8);
+    const created = p.time || p.created_at || p.date || Date.now();
+
+    const card = document.createElement('div');
+    card.className='orderCard';
+    if(deliveredMap[id]) card.classList.add('delivered');
+
+    card.innerHTML = `
+      <input type="checkbox" class="checkboxDelivered" ${deliveredMap[id]?'checked':''}>
+      <div class="orderHeader">
+        <div class="orderId">${id}</div>
+        <div class="${paid? 'badgePaid':'badgePending'}">${paid? 'PAGADO':'pagado'}</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="orderAmount">${amount.toLocaleString()} sats</div>
+        <div style="font-size:0.85rem;color:var(--muted)">${fmtDate(created)}</div>
+      </div>
+      <div class="orderMemo">${memo || '<em>(sin descripción)</em>'}</div>
+      <div class="orderMeta">
+        <div>request: ${(p.payment_request||'').slice(0,22)}${(p.payment_request||'').length>22?'...':''}</div>
+        <div style="text-align:right">${p.method || ''}</div>
+      </div>
+    `;
+
+    const checkbox = card.querySelector('.checkboxDelivered');
+    checkbox.addEventListener('change', ()=>{
+      deliveredMap[id] = checkbox.checked;
+      saveDelivered(deliveredMap);
+      if(checkbox.checked) card.classList.add('delivered');
+      else card.classList.remove('delivered');
+    });
+
+    ordersGrid.appendChild(card);
+  }
+}
+
+/* Filtros  */
+function applyFiltersAndRender(){
+  let list = lastPayments.slice();
+  const q = searchMemo.value.trim().toLowerCase();
+  const fPaid = filterPaid.value;
+  const fTime = filterTime.value;
+  const now = Date.now();
+
+  if(fPaid==='paid') list = list.filter(p=>p.paid===true||p.status==='paid'||p.paid===1);
+  if(fPaid==='unpaid') list = list.filter(p=>!(p.paid===true||p.status==='paid'||p.paid===1));
+  if(q) list = list.filter(p=>(p.memo||'').toLowerCase().includes(q));
+
+  if(fTime!=='all'){
+    const timeRanges = {hour:3600e3, day:86400e3, week:604800e3, month:2592000e3};
+    list = list.filter(p=>{
+      const t = p.time || p.created_at || p.date || Date.now();
+      const ts = typeof t==='number'? (t>1e12?t:t*1000):new Date(t).getTime();
+      return now - ts <= timeRanges[fTime];
+    });
+  }
+  renderPayments(list);
+}
+
+/*Fetch  */
+async function fetchPayments(){
+  statusMsg.textContent='Consultando LNBits...'; ordersGrid.innerHTML='';
+  try{
+    const r = await fetch(`${LNBITS_URL}/api/v1/payments`,{headers:{'X-Api-Key':READ_KEY}});
+    const data = await r.json();
+    lastPayments = Array.isArray(data)? data : data.data || data.payments || [];
+    applyFiltersAndRender();
+  }catch(e){ statusMsg.textContent='Error al consultar LNBits.'; }
+}
+
+/*  Eventos */
+btnRefresh.onclick=fetchPayments;
+searchMemo.oninput=applyFiltersAndRender;
+filterPaid.onchange=applyFiltersAndRender;
+filterTime.onchange=applyFiltersAndRender;
+
+/* Inicio  */
+window.onload=()=>{
+  setTimeout(()=>{ document.getElementById('pantallaCarga').style.display='none'; },2500);
+  fetchPayments();
+};
+//gracias rodri
+//hecho por joshua creditos guinxu nada que ver pero por el aprendí a programar
+</script>
+</body>
+</html>

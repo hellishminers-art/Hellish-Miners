@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Bistro Café AMOCH ⚡</title>
+
+<!-- QR library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f0f10; --card:#141416; --muted:#bfc6cd; --accent:#ffd36b; --accent-2:#ffb000;
+  --panel:#1a1a1c;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; font-family:Poppins,system-ui,Arial; background:linear-gradient(180deg,#0b0b0d 0%, #0f0f10 100%); color:#fff; -webkit-font-smoothing:antialiased;
+}
+
+/* pantalla de carga */
+#pantallaCarga{
+  position:fixed; inset:0; background:#000; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  z-index:9999; text-align:center; gap:12px;
+  animation: fadeOut 1s ease 3.5s forwards;
+}
+#pantallaCarga h1{ margin:0; font-size:2rem; color:#fff; opacity:0; animation: fadeIn 1s ease forwards; letter-spacing:1px }
+#pantallaCarga img{ width:140px; margin:12px 0; opacity:0; animation: fadeInScale 1s ease forwards .5s; transform-origin:center; }
+#pantallaCarga p{ margin:0; color:var(--accent); opacity:0; animation: fadeIn 1s ease forwards 1.2s; }
+@keyframes fadeIn{ from{opacity:0; transform:translateY(12px)} to{opacity:1; transform:none} }
+@keyframes fadeOut{ to{opacity:0; visibility:hidden} }
+@keyframes fadeInScale{ 0%{opacity:0; transform:scale(0.6)} 100%{opacity:1; transform:scale(1)} }
+
+/*  portada:) que bonita quedo */
+.headerWrap{ padding:28px 18px; text-align:center; background:linear-gradient(180deg,var(--card),#0f0f10); border-bottom:1px solid rgba(255,255,255,0.02); position:relative; }
+.brandTitle{ font-weight:600; color:var(--accent); font-size:1.6rem; margin:4px 0; }
+.subtitle{ color:var(--muted); margin:6px 0 0 0; font-size:0.95rem; opacity:0.9; }
+.coverPhrase{ max-width:820px; margin:12px auto 0; color:#dcdfe3; font-style:italic; font-weight:300; }
+
+/* no me acuerdo amilcar no se se si quitarlo */
+.container{ max-width:1200px; margin:20px auto; padding:0 16px 80px 16px; }
+
+/* categoria */
+.catHeader{ margin:18px 0 8px 0; color:var(--accent); font-size:1.05rem; font-weight:700; display:flex; align-items:center; gap:10px; }
+.catHeader .line{ flex:1; height:1px; background:rgba(255,255,255,0.03); }
+
+/* productos */
+.productos{ display:grid; grid-template-columns: repeat(auto-fit,minmax(240px,1fr)); gap:18px; }
+.producto{ background:var(--panel); border-radius:12px; padding:12px; box-shadow:0 6px 18px rgba(0,0,0,0.6); transition:transform 0.25s; border:1px solid rgba(255,255,255,0.02); }
+.producto:hover{transform:translateY(-6px);}
+.producto img{ width:100%; height:140px; object-fit:cover; border-radius:8px; background:#202024; display:block; }
+.producto h3{ margin:10px 0 6px 0; color:var(--accent); font-size:1.02rem; }
+.producto .desc{ color:var(--muted); font-size:0.9rem; margin-bottom:6px; min-height:36px }
+.precio{ font-weight:700; margin-bottom:8px; color:#fff; }
+.btnAdd{ background:linear-gradient(180deg,var(--accent-2),var(--accent)); border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:700; color:#111; width:100%; }
+
+/* texto volando */
+#textoFlotante{
+  position:fixed; right:100px; bottom:36px; background:rgba(0,0,0,0.75); padding:8px 12px; border-radius:12px; color:var(--accent);
+  box-shadow:0 6px 18px rgba(0,0,0,0.6); z-index:1000; font-weight:600;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity .3s;
+}
+#carritoBtn{
+  position:fixed; right:20px; bottom:20px; width:72px; height:72px; border-radius:999px; border:none; background:linear-gradient(180deg,var(--accent-2),var(--accent));
+  box-shadow:0 10px 30px rgba(255,136,0,0.25); display:flex; align-items:center; justify-content:center; z-index:1000; cursor:pointer;
+  animation: floatBtn 3s ease-in-out infinite;
+}
+@keyframes floatBtn{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+#carritoBtn img{ width:40px; height:40px; filter:brightness(0) invert(1); }
+
+/* panel del carrito */
+#carritoPanel{
+  position:fixed; right:0; bottom:0; background:var(--card); width:100%; max-width:420px; border-top-left-radius:16px; padding:18px; box-shadow:0 -10px 30px rgba(0,0,0,0.6); z-index:999;
+  transform:translateY(110%); transition:transform .28s ease;
+}
+#carritoPanel.open{ transform:translateY(0); }
+#carritoPanel h2{ margin:6px 0 10px 0; color:var(--accent); text-align:center }
+#listaCarrito{ list-style:none; padding:0; margin:0; max-height:260px; overflow:auto; color:var(--muted) }
+#listaCarrito li{ display:flex; justify-content:space-between; padding:8px 6px; border-bottom:1px dashed rgba(255,255,255,0.03) }
+#totalRow{ display:flex; justify-content:space-between; align-items:center; margin-top:12px; font-weight:800; color:#fff; }
+#btnPagar{ margin-top:12px; width:100%; padding:12px; border-radius:12px; border:none; background:var(--accent); color:#111; font-weight:800; cursor:pointer; }
+
+/* QR */
+#qrWrap{ text-align:center; margin-top:12px; display:none }
+canvas{ border-radius:8px; background:transparent }
+
+footer{ text-align:center; padding:18px; color:#888; font-size:12px; margin-top:28px; background:transparent; }
+footer img{ width:48px; display:block; margin:8px auto 0 }
+
+@media (max-width:720px){
+  #textoFlotante{ right:96px; bottom:30px; font-size:0.85rem }
+  .productos{ padding:0; gap:12px }
+  .container{ padding-bottom:120px }
+}
+</style>
+</head>
+<body>
+
+<!-- Pantalla de carga  -->
+<div id="pantallaCarga">
+  <h1>Bistro Café AMOCH</h1>
+  <img src="https://i.ibb.co/LDx54Scp/IMG-2520.png" alt="Logo Hellish Miners">
+  <p>Desarrollado por Hellish Miners ⚡</p>
+</div>
+
+<header class="headerWrap">
+  <div class="brandTitle">Bistro Café AMOCH</div>
+  <div class="subtitle">Menú – Desayunos, Comida rápida y más</div>
+  <div class="coverPhrase">“Un café y un amor, calientes por favor.”</div>
+</header>
+
+<div class="container">
+  <!-- Aquí se inyectan las categorías y productos -->
+  <div id="menuArea"></div>
+</div>
+
+<div id="textoFlotante">Paga con Lightning aquí ⚡</div>
+<button id="carritoBtn" title="Abrir carrito">
+  <img src="https://cdn-icons-png.flaticon.com/512/1170/1170576.png" alt="carrito">
+</button>
+
+<div id="carritoPanel" aria-hidden="true">
+  <h2>🛒 Carrito</h2>
+  <ul id="listaCarrito"></ul>
+  <div id="totalRow"><div>Total</div><div id="total">0 sats</div></div>
+  <button id="btnPagar">Pagar con Lightning ⚡</button>
+
+  <div id="qrWrap">
+    <div id="bolt11Text" style="word-break:break-all;color:var(--muted);font-size:13px;margin-top:8px"></div>
+    <canvas id="qrCanvas" width="280" height="280"></canvas>
+  </div>
+
+  <div id="pagoStatus" style="margin-top:10px; text-align:center; color:#8f8;"></div>
+</div>
+
+<footer>
+  Desarrollado por Hellish Miners
+  <img src="https://i.ibb.co/LDx54Scp/IMG-2520.png" alt="Hellish Miners Logo">
+</footer>
+
+<script>
+/*convercion  */
+const LNBITS_URL = 'http://chirilicas.com:5000';
+const INVOICE_KEY = 'f85b67c8d22745ceb3bdac7fead3478d'; 
+const SATS_PER_USD = 1040;
+
+
+const productos = [
+  // Desayunos
+  { id:'d1', categoria:'Desayunos', nombre:'AMOCH LIGHT (3 panqueques con fruta)', precioUSD:2.75, imagen:'https://img-global.cpcdn.com/recipes/2d8840869927a1f7/680x781cq80/pancakes-super-saludables-de-avena-y-fruta-foto-principal.jpg' },
+  { id:'d2', categoria:'Desayunos', nombre:'DESAYUNO TÍPICO', descripcion:'2 huevos, frijoles, crema/queso, plátano, butifarras', precioUSD:4.15, imagen:'https://www.laprensa.hn/binrepository/1200x797/0c0/0d0/none/11004/GBLO/imagen-desayuno-indio-lempira-transfo_5230851_20230810103201.jpg' },
+  { id:'d3', categoria:'Desayunos', nombre:'DESAYUNO AMOCH (Omelette y acompañamientos)', precioUSD:3.95, imagen:'https://buenprovecho.hn/wp-content/uploads/2021/07/Desayuno-con-omelette-1.png' },
+
+  // Fast Food / Snacks
+  { id:'f1', categoria:'Fast Food', nombre:'BISTRO CURLS (sopa + chimol + nachos)', precioUSD:3.75, imagen:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSD97t_1xhiJ52hhjW0wEwpeRIvBX5-hPQWPA&s' },
+  { id:'f2', categoria:'Fast Food', nombre:'DERRETIDO DE JAMÓN (pan de caja)', precioUSD:2.99, imagen:'https://www.gastrolabweb.com/u/fotografias/m/2021/10/28/f850x638-20822_98311_5955.jpg' },
+  { id:'f3', categoria:'Fast Food', nombre:'HOT DOG XL', precioUSD:3.45, imagen:'https://buy.am/media/image/9c/04/5a/hamove-double-sausage.jpg' },
+  { id:'f4', categoria:'Fast Food', nombre:'BURRITO 24/7', precioUSD:2.75, imagen:'https://www.sixsistersstuff.com/wp-content/uploads/2017/04/7-layer-dip-burrito-1.jpg' },
+  { id:'f5', categoria:'Fast Food', nombre:'MINI AMOCH (pan artesanal)', precioUSD:4.50, imagen:'https://thumbs.dreamstime.com/b/carne-asada-deliciosa-con-pur%C3%A9-de-papas-salsa-verduras-y-pan-ajo-cortado-en-un-plato-el-delicioso-buey-asado-188539627.jpg' },
+
+  // Drinks básicos
+  { id:'r1', categoria:'Drinks', nombre:'Soda', precioUSD:0.90, imagen:'https://i5.walmartimages.com/seo/Coca-Cola-Soda-Pop-12-fl-oz-Can_14a1f5dc-f8bf-4071-9aea-0f753c3eecf4.08041b7f0a409ee67d80e489be3c1c55.jpeg' },
+  { id:'r2', categoria:'Drinks', nombre:'Jugo lata', precioUSD:0.90, imagen:'https://www.coca-cola.com/content/dam/onexp/sv/es/brands/del-valle/manzana-lata.jpg' },
+  { id:'r3', categoria:'Drinks', nombre:'Té frío', precioUSD:1.00, imagen:'https://walmartsv.vtexassets.com/arquivos/ids/449920/Te-Lipton-Frambuesa-500Ml-Pet-1-5754.jpg?v=638513194188800000' },
+  { id:'r4', categoria:'Drinks', nombre:'Agua', precioUSD:0.75, imagen:'https://i5.walmartimages.com.mx/gr/images/product-images/img_large/00750179166615L.jpg' },
+
+  // A lo natural / granizados / smoothies
+  { id:'r5', categoria:'Drinks', nombre:'A LO NATURAL (limonada/tamarindo/jamaica)', precioUSD:1.25, imagen:'https://media-cdn.tripadvisor.com/media/photo-s/1d/18/39/0d/bebidas-refill-jamaica.jpg' },
+  { id:'g1', categoria:'Granizados', nombre:'Granizado de frutas (varios sabores)', precioUSD:2.35, imagen:'https://mejisa.com/wp-content/uploads/2020/02/granizado_frutas.jpg' },
+  { id:'g3', categoria:'Smoothie/Licuados', nombre:'Smoothie / Licuados (varios)', precioUSD:1.99, imagen:'https://hips.hearstapps.com/hmg-prod/images/best-smoothies-weight-loss-fit-foodie-finds-strawberry-cheesecake-protein-smoothie-667c469a6fb2a.png?crop=0.8888888888888888xw:1xh;center,top' },
+
+  // Cafés
+  { id:'c1', categoria:'Café', nombre:'Café Americano', precioUSD:1.99, imagen:'https://cdn.recetasderechupete.com/wp-content/uploads/2023/11/Cafe-americano-portada.jpg' },
+  { id:'c2', categoria:'Café', nombre:'Café de la casa', precioUSD:0.75, imagen:'https://www.stephaniefox.co.uk/wp-content/uploads/2024/01/IMG_0024.jpeg' },
+  { id:'c3', categoria:'Café', nombre:'Café Juan Valdez', precioUSD:1.25, imagen:'https://juanvaldez.com/wp-content/uploads/2025/01/Latte-Moca.png' },
+  { id:'c4', categoria:'Café', nombre:'Café instantáneo', precioUSD:0.75, imagen:'https://upload.wikimedia.org/wikipedia/commons/4/45/A_small_cup_of_coffee.JPG' },
+  { id:'c5', categoria:'Café', nombre:'Té (caliente)', precioUSD:1.25, imagen:'https://images.pexels.com/photos/734983/pexels-photo-734983.jpeg' },
+
+  // Hamburguesas
+  { id:'h1', categoria:'Hamburguesas', nombre:'Hamburguesa de pollo', precioUSD:4.75, imagen:'https://imag.bonviveur.com/hamburguesa-de-pollo-crujiente-crispy-chicken.jpg' },
+  { id:'h2', categoria:'Hamburguesas', nombre:'Hamburguesa doble queso', precioUSD:5.25, imagen:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRzvCNn-XMaPIDgFFLf4KvBpkCaT05XNcFQMg&s' },
+  { id:'h3', categoria:'Hamburguesas', nombre:'Hamburguesa champiñones', precioUSD:5.50, imagen:'https://diabetesfoodhub.org/sites/foodhub/files/styles/recipe_hero_banner_720w/public/376-diabetic-turkey-burger-mushroom_AdobeStock31133722_022221.jpg?h=48784f2c&itok=owNF3X9Z' },
+  { id:'h4', categoria:'Hamburguesas', nombre:'Hamburguesa bacon', precioUSD:5.75, imagen:'https://s-api.qcart.app/images/comoquiero-uploads/images/recipes/originals/6022.jpg?s=716x600&fit=cover&ext=webp' },
+
+  // Ensaladas y alitas
+  { id:'e1', categoria:'Ensaladas', nombre:'Ensalada de la casa', precioUSD:4.99, imagen:'https://popmenucloud.com/cdn-cgi/image/width%3D1200%2Cheight%3D1200%2Cfit%3Dscale-down%2Cformat%3Dauto%2Cquality%3D60/egtwfphd/0e92c9c7-6a97-4b04-bf5d-c488fb61aeee.jpg' },
+  { id:'e2', categoria:'Ensaladas', nombre:'Mix Amoch', precioUSD:5.35, imagen:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcThjRBFXFguP_QEDuh_cayVKYKlPb4rSvHh8A&s' },
+  { id:'a1', categoria:'Alitas', nombre:'Alitas BBQ', precioUSD:4.95, imagen:'https://www.annarecetasfaciles.com/files/alitas-a-la-barbacoa-scaled.jpg' },
+  { id:'a2', categoria:'Alitas', nombre:'Alitas empanizadas', precioUSD:4.95, imagen:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSaMFHshbdchww6seR-Q-FYI3krdtRQLGiV2Q&s' },
+
+  // Comida mexicana
+  { id:'m1', categoria:'Comida Mexicana', nombre:'Torta Mexicana', precioUSD:5.75, imagen:'https://www.mexicodesconocido.com.mx/wp-content/uploads/2019/11/torta-2.jpg' },
+  { id:'m2', categoria:'Comida Mexicana', nombre:'Torta de birria', precioUSD:6.35, imagen:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRgllJhsWRbr68338egR8hGFq8JXTIoiTE1Hg&s' },
+  { id:'m3', categoria:'Comida Mexicana', nombre:'Burrito de birria', precioUSD:5.99, imagen:'https://onestophalal.com/cdn/shop/articles/birria_burrito_2a5fa70d-5bd6-4c53-b094-1c67a1b71bcf_1200x.jpg?v=1749872818' },
+  { id:'m4', categoria:'Comida Mexicana', nombre:'Burrito de res', precioUSD:5.50, imagen:'https://burritosweb.com/wp-content/uploads/2018/01/21.-Burritos-mexicanos-de-res.jpg' },
+  { id:'m5', categoria:'Comida Mexicana', nombre:'Burrito de pollo', precioUSD:5.25, imagen:'https://especiasmontero.com/wp-content/uploads/2019/04/Burrito-de-pollo-1.jpg' },
+  { id:'m6', categoria:'Comida Mexicana', nombre:'Quesabirria', precioUSD:5.35, imagen:'https://www.thecookierookie.com/wp-content/uploads/2023/04/featured-quesabirria-tacos-recipe.jpg' },
+  { id:'m7', categoria:'Comida Mexicana', nombre:'Sopa Azteca', precioUSD:4.95, imagen:'https://casamandoka.com/wp-content/uploads/2021/06/IMG_7740-scaled-1-768x1024.jpg' },
+  { id:'m8', categoria:'Comida Mexicana', nombre:'Nachos', precioUSD:3.75, imagen:'https://lastaquerias.com/wp-content/uploads/2023/12/recetas-de-nachos-mexicanos-scaled.jpg' }
+ //nota de aron me costo amilcar
+];
+
+/* ====== Estado ====== */
+let cart = [];
+const menuArea = document.getElementById('menuArea');
+const carritoBtn = document.getElementById('carritoBtn');
+const textoFlotante = document.getElementById('textoFlotante');
+const carritoPanel = document.getElementById('carritoPanel');
+const listaCarrito = document.getElementById('listaCarrito');
+const totalEl = document.getElementById('total');
+const btnPagar = document.getElementById('btnPagar');
+const qrWrap = document.getElementById('qrWrap');
+const bolt11Text = document.getElementById('bolt11Text');
+const qrCanvas = document.getElementById('qrCanvas');
+const pagoStatus = document.getElementById('pagoStatus');
+
+
+function renderMenuGrouped(){
+  // categoria
+  const categories = [];
+  const map = {};
+  for(const p of productos){
+    if(!map[p.categoria]){ map[p.categoria]=[]; categories.push(p.categoria); }
+    map[p.categoria].push(p);
+  }
+
+  menuArea.innerHTML = '';
+  for(const cat of categories){
+    const catWrap = document.createElement('div');
+    catWrap.innerHTML = `
+      <div class="catHeader"><div class="line"></div><div>${cat}</div><div class="line"></div></div>
+      <div class="productos" data-cat="${cat}"></div>
+    `;
+    menuArea.appendChild(catWrap);
+
+    const grid = catWrap.querySelector('.productos');
+    for(const item of map[cat]){
+      const sats = Math.round(item.precioUSD * SATS_PER_USD);
+      const card = document.createElement('div'); card.className='producto';
+      card.innerHTML = `
+        <img src="${item.imagen || ''}" alt="${item.nombre}">
+        <h3>${item.nombre}</h3>
+        <div class="desc">${item.descripcion || ''}</div>
+        <div class="precio">$${item.precioUSD.toFixed(2)} / ${sats.toLocaleString()} sats</div>
+        <button class="btnAdd" data-id="${item.id}">Agregar</button>
+      `;
+      grid.appendChild(card);
+    }
+  }
+
+  // lista 
+  document.querySelectorAll('.btnAdd').forEach(b=>{
+    b.addEventListener('click', e=>{
+      const id = e.currentTarget.dataset.id;
+      const prod = productos.find(x=>x.id===id);
+      if(prod){
+        cart.push(Object.assign({}, prod));
+        renderCart();
+        carritoBtn.classList.add('added');
+        textoFlotante.style.opacity='1';
+        setTimeout(()=>{ carritoBtn.classList.remove('added'); textoFlotante.style.opacity='0'; },800);
+      }
+    });
+  });
+}
+
+/* ====== Carrito UI ====== */
+function renderCart(){
+  listaCarrito.innerHTML='';
+  let total=0;
+  cart.forEach((item,idx)=>{
+    const sats = Math.round(item.precioUSD * SATS_PER_USD);
+    total += sats;
+    const li = document.createElement('li');
+    li.innerHTML = `<div>${item.nombre}</div><div>${sats.toLocaleString()} sats <button data-idx="${idx}" style="margin-left:10px;background:none;border:none;color:var(--muted);cursor:pointer">X</button></div>`;
+    listaCarrito.appendChild(li);
+  });
+  totalEl.textContent = total.toLocaleString() + ' sats';
+
+  document.querySelectorAll('#listaCarrito button').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const i = Number(e.currentTarget.dataset.idx);
+      cart.splice(i,1);
+      renderCart();
+    });
+  });
+}
+
+/* carrito panel */
+function openCart(){ carritoPanel.classList.add('open'); carritoPanel.setAttribute('aria-hidden','false'); }
+function closeCart(){ carritoPanel.classList.remove('open'); carritoPanel.setAttribute('aria-hidden','true'); }
+carritoBtn.addEventListener('click', ()=>{ if(carritoPanel.classList.contains('open')) closeCart(); else openCart(); });
+
+/*      QR  */
+function drawQR(text){
+  try{
+    new QRious({ element: qrCanvas, value:text, size:280, background:'transparent', foreground:'#ffd36b' });
+    qrWrap.style.display='block';
+    bolt11Text.textContent=text;
+  }catch(e){ console.error('QR error', e); }
+}
+
+/*acseso a (LNBits) */
+async function createInvoice(totalSats,memo){
+  if(!INVOICE_KEY || INVOICE_KEY==='PUT_YOUR_INVOICE_KEY_HERE') throw new Error('Invoice key no configurada.');
+  const endpoint=`${LNBITS_URL.replace(/\/$/,'')}/api/v1/payments`;
+  const body={ out:false, amount:Number(totalSats), memo };
+  const resp=await fetch(endpoint,{method:'POST', headers:{'Content-Type':'application/json','X-Api-Key':INVOICE_KEY}, body:JSON.stringify(body)});
+  const txt=await resp.text(); let j; try{ j=JSON.parse(txt); } catch(e){ j={ raw:txt }; }
+  if(!resp.ok) throw new Error('Error LNBits: '+JSON.stringify(j));
+  return j;
+}
+
+/* pago  */
+function pollPayment(hashOrId){
+  const interval=setInterval(async ()=>{
+    try{
+      const r=await fetch(`${LNBITS_URL.replace(/\/$/,'')}/api/v1/payments/${hashOrId}`,{headers:{'X-Api-Key':INVOICE_KEY}});
+      const d=await r.json();
+      if(d && (d.paid===true || d.paid==='true')){
+        clearInterval(interval);
+        pagoStatus.textContent=' Pago recibido correctamente. ¡Gracias por tu compra!';
+        pagoStatus.style.color='#6ef26e';
+        cart=[]; renderCart();
+      }
+    }catch(err){ console.warn('poll error',err); }
+  },3000);
+}
+
+/* qr*/
+btnPagar.addEventListener('click', async ()=>{
+  const totalStr = totalEl.textContent.replace(/\D/g,'');
+  const totalSats = Number(totalStr)||0;
+  if(totalSats<=0){ alert('El carrito está vacío'); return; }
+
+  const memo = 'Compra AMOCH: ' + cart.map(x=>x.nombre).join(', ');
+  btnPagar.disabled=true; btnPagar.textContent='Generando factura…';
+  pagoStatus.textContent='';
+  try{
+    const invoiceObj = await createInvoice(totalSats,memo);
+    const bolt11 = invoiceObj.payment_request||invoiceObj.bolt11||invoiceObj.invoice;
+    const hash = invoiceObj.payment_hash||invoiceObj.r_hash||invoiceObj.checking_id||invoiceObj.id||null;
+    if(!bolt11) throw new Error('LNBits no devolvió payment_request');
+    drawQR(bolt11);
+    if(hash) pollPayment(hash);
+    btnPagar.textContent='Factura generada -- Esperando pago';
+  }catch(err){
+    alert('Error creando invoice: '+(err.message||err));
+    console.error(err);
+    btnPagar.disabled=false; btnPagar.textContent='Pagar con Lightning ⚡';
+  }
+});
+
+
+renderMenuGrouped();
+renderCart();
+
+
+window.addEventListener('load', ()=>{ setTimeout(()=>{ document.getElementById('pantallaCarga').style.display='none'; document.body.style.overflow='auto'; },3500); });
+//agradecimiento a rodri aguilera agradecimiento de parte de hellish miner y del IN Walter Thilo Deninger gracias por adentranos a la madriguera fue un gusto poder recibir las clases esperamos que estes orgulloso de nosotros
+//nota de joshua no sabemos como despues de muchos cafe soluciene muchos bugs que tenian y que cree, fue un gusto poder trabajar con mis amigos en un proyecto de programacion siempre quise hacer eso
+//nota de 39fb rodri sabra quien soy desirle que es el mejor profesor <3 :)
+//nota de amilcar gracias rodri por todo lo que nos enseñaste y por tu paciencia eres un gran profesor y persona, saludos de hellish miners <3
+//pupusas cuando nos invitas a una pupuseada queremos conocerte somos tus fans
+</script>
+</body>
+</html>
